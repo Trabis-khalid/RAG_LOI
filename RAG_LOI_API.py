@@ -12,8 +12,6 @@ import pickle
 import requests
 from typing import List, Dict, Optional, Union
 import re
-
-
 import datetime
 import requests
 
@@ -41,7 +39,7 @@ class RAGLoader:
         
         # Chemins des fichiers
         self.splits_path = self.splits_folder / "splits.json"
-        self.index_path = self.index_folder / "faiss.index"
+        self.index_path = self.index_folder / "faiss.index.pkl"
         self.documents_path = self.index_folder / "documents.pkl"
         
         # Initialiser le modèle
@@ -146,7 +144,10 @@ class RAGLoader:
         print("Chargement de l'index existant...")
         try:
             # Charger l'index FAISS
-            self.index = faiss.read_index(str(self.index_path))
+            # self.index = faiss.read_index(str(self.index_path))
+            with open(f"{self.index_path}", 'rb') as f:
+                self.index = pickle.load(f)
+                print(f"Index chargé avec succès {self.index_path}.pkl")
             
             # Charger les documents associés
             with open(self.documents_path, 'rb') as f:
@@ -193,7 +194,10 @@ class RAGLoader:
             
             # Sauvegarder l'index
             print("Sauvegarde de l'index...")
-            faiss.write_index(self.index, str(self.index_path))
+            # faiss.write_index(self.index, str(self.index_path))
+            with open(f"{self.index_path}.pkl", 'wb') as f:
+                pickle.dump(self.index, f)
+                print(f"Index sauvegardé avec succès dans {self.index_path}.pkl")
             
             # Sauvegarder les documents associés
             self.indexed_documents = documents
@@ -445,3 +449,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
