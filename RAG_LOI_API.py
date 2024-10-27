@@ -49,6 +49,31 @@ class RAGLoader:
         self.index = None
         self.indexed_documents = None
 
+    def merge_files(self,total_chunks):
+        chunks_dir = "./index"
+        # merge_file = "./index"
+        # Changement du chemin de sortie pour le mettre dans le dossier chunks
+        output_file = os.path.join(chunks_dir, "faiss.index")
+    
+        # S'assurer que le dossier chunks existe
+        os.makedirs(chunks_dir, exist_ok=True)
+    
+        total_size = 0
+        with open(output_file, "wb") as outfile:
+            for i in range(total_chunks):
+                chunk_name = os.path.join(chunks_dir, f"chunk_{i}.bin")
+            
+                try:
+                    with open(chunk_name, "rb") as chunk:
+                        chunk_data = chunk.read()
+                        chunk_size = len(chunk_data)
+                        outfile.write(chunk_data)
+                        total_size += chunk_size
+                    print(f"Morceau {i} fusionné - Taille: {chunk_size / (1024*1024):.2f} Mo")
+                except FileNotFoundError:
+                    print(f"Erreur: Le morceau {chunk_name} n'a pas été trouvé!")
+                    return False
+
     def encode(self,payload):
         API_URL = "https://api-inference.huggingface.co/models/intfloat/multilingual-e5-large"
         headers = {"Authorization": "Bearer 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"} 
@@ -139,6 +164,9 @@ class RAGLoader:
         Returns:
             bool: True si l'index a été chargé, False sinon
         """
+        self.merge_files(10)
+        print("les chunks sont merges")
+
         if not self._index_exists():
             print("Aucun index trouvé.")
             return False
