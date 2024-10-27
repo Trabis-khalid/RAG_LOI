@@ -177,8 +177,8 @@ class RAGLoader:
             self.index = faiss.read_index(str(self.index_path))
             
             # Charger les documents associés
-            with open(self.documents_path, 'rb') as f:
-                self.indexed_documents = pickle.load(f)
+            # with open(self.documents_path, 'rb') as f:
+            #     self.indexed_documents = pickle.load(f)
                 
             print(f"Index chargé avec {self.index.ntotal} vecteurs")
             return True
