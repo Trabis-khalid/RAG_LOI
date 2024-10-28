@@ -394,7 +394,7 @@ class RAGChatBot:
             self.rag_loader.create_index()
             
         # Obtention du retriever
-        self.retriever = self.rag_loader.get_retriever(k=10)
+        self.retriever = self.rag_loader.get_retriever(k=5)
         
         # Template du prompt en arabe
         self.prompt_template = ChatPromptTemplate.from_messages([
