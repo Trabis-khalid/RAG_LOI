@@ -312,7 +312,6 @@ class RAGLoader:
             
         return retriever_function
 
-RAGLoader.merge_files(total_chunks=10)
 # Configuration de la page Streamlit
 st.set_page_config(
     page_title="هذا برنامج الاجابة عن الأسئلة المتعلقة بالقانون المغربي",
