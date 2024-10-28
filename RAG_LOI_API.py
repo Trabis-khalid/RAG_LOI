@@ -187,7 +187,6 @@ class RAGLoader:
         
             bool: True si l'index a été chargé, False sinon
         """
-        # self.merge_files(10)
         if not self._index_exists():
             print("Aucun index trouvé.")
             return False
@@ -312,7 +311,7 @@ class RAGLoader:
             
         return retriever_function
 
-
+self.merge_files(10)
 # Configuration de la page Streamlit
 st.set_page_config(
     page_title="هذا برنامج الاجابة عن الأسئلة المتعلقة بالقانون المغربي",
