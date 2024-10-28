@@ -74,33 +74,11 @@ class RAGLoader:
                     print(f"Erreur: Le morceau {chunk_name} n'a pas été trouvé!")
                     return False
 
-    def encode(self, payload):
-        try:
-            API_URL = "https://api-inference.huggingface.co/models/intfloat/multilingual-e5-large"
-            headers = {"Authorization": "Bearer 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"}
-            
-            # Format the payload correctly
-            formatted_payload = {
-                "inputs": payload,
-                "options": {"wait_for_model": True}
-            }
-            
-            response = requests.post(API_URL, headers=headers, json=formatted_payload)
-            response.raise_for_status()  # Raise an exception for bad status codes
-            
-            embeddings = response.json()
-            
-            # Convert to numpy array if valid embedding format received
-            if isinstance(embeddings, list) and len(embeddings) > 0:
-                return np.array(embeddings)
-            else:
-                print("Erreur: format d'embedding non valide.")
-                return None  # ou lever une exception
-                
-        except Exception as e:
-            print(f"Error in encode method: {str(e)}")
-            print(f"Response content: {response.content if 'response' in locals() else 'No response'}")
-            return None
+    def encode(self,payload):
+        API_URL = "https://api-inference.huggingface.co/models/intfloat/multilingual-e5-large"
+        headers = {"Authorization": "Bearer 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"} 
+        response = requests.post(API_URL, headers=headers, json=payload)
+        return response.json()
         
     def load_and_split_texts(self) -> List[Document]:
         """
