@@ -237,12 +237,12 @@ class RAGLoader:
             embeddings_array = np.array(embeddings).astype('float32')
            
             # Vérifier la forme des embeddings
-            if len(embeddings_array.shape) != 2:
-                print(f"Shape des embeddings: {embeddings_array.shape}")
-                if len(embeddings_array.shape) == 3:
-                    embeddings_array = embeddings_array.squeeze(0)
+            if len(embeddings.shape) != 2:
+                print(f"Shape des embeddings: {embeddings.shape}")
+                if len(embeddings.shape) == 3:
+                    embeddings = embeddings.squeeze(0)
                 else:
-                    raise ValueError(f"Format d'embeddings inattendu: {embeddings_array.shape}")
+                    raise ValueError(f"Format d'embeddings inattendu: {embeddings.shape}")
             
             # Initialiser l'index FAISS
             dimension = embeddings_array.shape[1]  # Get the embedding dimension
