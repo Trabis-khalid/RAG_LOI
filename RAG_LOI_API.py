@@ -386,7 +386,7 @@ st.markdown("""
 class RAGChatBot:
     def __init__(self):
         # Initialisation du modèle LLM
-        self.llm = ChatMistralAI(model="mistral-large-latest", mistral_api_key="QK0ZZpSxQbCEVgOLtI6FARQVmBYc6WGP")
+        self.llm = ChatMistralAI(model="mistral-large-latest", mistral_api_key=mistral_api_key)
         
         # Initialisation du RAG
         self.rag_loader = RAGLoader()
