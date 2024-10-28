@@ -74,11 +74,33 @@ class RAGLoader:
                     print(f"Erreur: Le morceau {chunk_name} n'a pas été trouvé!")
                     return False
 
-    def encode(self,payload):
-        API_URL = "https://api-inference.huggingface.co/models/intfloat/multilingual-e5-large"
-        headers = {"Authorization": "Bearer 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"} 
-        response = requests.post(API_URL, headers=headers, json=payload)
-        return response.json()
+    def encode(self, payload):
+        try:
+            API_URL = "https://api-inference.huggingface.co/models/intfloat/multilingual-e5-large"
+            headers = {"Authorization": "Bearer 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"}
+            
+            # Format the payload correctly
+            formatted_payload = {
+                "inputs": payload,
+                "options": {"wait_for_model": True}
+            }
+            
+            response = requests.post(API_URL, headers=headers, json=formatted_payload)
+            response.raise_for_status()  # Raise an exception for bad status codes
+            
+            embeddings = response.json()
+            
+            # Convert to numpy array if valid embedding format received
+            if isinstance(embeddings, list) and len(embeddings) > 0:
+                return np.array(embeddings)
+            else:
+                print("Erreur: format d'embedding non valide.")
+                return None  # ou lever une exception
+                
+        except Exception as e:
+            print(f"Error in encode method: {str(e)}")
+            print(f"Response content: {response.content if 'response' in locals() else 'No response'}")
+            return None
         
     def load_and_split_texts(self) -> List[Document]:
         """
@@ -162,11 +184,10 @@ class RAGLoader:
         Charge l'index FAISS et les documents associés s'ils existent
         
         Returns:
+        self.merge_files(10)
             bool: True si l'index a été chargé, False sinon
         """
-        self.merge_files(10)
-        print("les chunks sont merges")
-
+        
         if not self._index_exists():
             print("Aucun index trouvé.")
             return False
@@ -175,17 +196,15 @@ class RAGLoader:
         try:
             # Charger l'index FAISS
             self.index = faiss.read_index(str(self.index_path))
-            
-            # Charger les documents associés
-            # with open(self.documents_path, 'rb') as f:
-            #     self.indexed_documents = pickle.load(f)
+            with open(self.documents_path, 'rb') as f:
+                self.indexed_documents = pickle.load(f)
                 
             print(f"Index chargé avec {self.index.ntotal} vecteurs")
-            return True
+            return self.index
             
         except Exception as e:
             print(f"Erreur lors du chargement de l'index: {e}")
-            return False
+            return None
 
            
     def create_index(self, documents: Optional[List[Document]] = None) -> bool:
@@ -211,14 +230,24 @@ class RAGLoader:
             print("Création des embeddings...")
             texts = [doc.page_content for doc in documents]
             embeddings = self.encode(texts)
-            print("Création des embeddings...")
+            
+            # Convert embeddings to numpy array if it's not already
+            embeddings_array = np.array(embeddings).astype('float32')
+           
+            # Vérifier la forme des embeddings
+            if len(embeddings_array.shape) != 2:
+                print(f"Shape des embeddings: {embeddings_array.shape}")
+                if len(embeddings_array.shape) == 3:
+                    embeddings_array = embeddings_array.squeeze(0)
+                else:
+                    raise ValueError(f"Format d'embeddings inattendu: {embeddings_array.shape}")
             
             # Initialiser l'index FAISS
-            dimension = np.array(embeddings).astype('float32').shape[1]
+            dimension = embeddings_array.shape[1]  # Get the embedding dimension
             self.index = faiss.IndexFlatL2(dimension)
             
             # Ajouter les vecteurs à l'index
-            self.index.add(np.array(embeddings).astype('float32'))
+            self.index.add(embeddings_array)
             
             # Sauvegarder l'index
             print("Sauvegarde de l'index...")
@@ -234,12 +263,13 @@ class RAGLoader:
             
         except Exception as e:
             print(f"Erreur lors de la création de l'index: {e}")
+            print(f"Shape des embeddings: {embeddings_array.shape if 'embeddings_array' in locals() else 'Non disponible'}")
             return False
-    
+        
     def _index_exists(self) -> bool:
         """Vérifie si l'index et les documents associés existent"""
         return self.index_path.exists() and self.documents_path.exists()
-    
+
     def get_retriever(self, k: int = 5):
         """
         Crée un retriever pour l'utilisation avec LangChain
@@ -258,7 +288,13 @@ class RAGLoader:
             
         def retriever_function(query: str) -> List[Document]:
             # Créer l'embedding de la requête
-            query_embedding = self.encode([query])[0]
+            query_embedding = self.encode([query])
+            
+            if query_embedding is None or len(query_embedding) == 0:
+                print("Erreur : impossible de créer l'embedding pour la requête.")
+                return []  # ou lever une exception
+            
+            query_embedding = query_embedding[0]
             
             # Rechercher les documents similaires
             distances, indices = self.index.search(
@@ -276,13 +312,6 @@ class RAGLoader:
             
         return retriever_function
 
-
-
-# Import de notre classe RAGLoader
-# from rag_loader import RAGLoader  # Assurez-vous que le fichier précédent est nommé rag_loader.py
-
-
-# rag_loader = RAGLoader()
 
 # Configuration de la page Streamlit
 st.set_page_config(
@@ -365,17 +394,17 @@ class RAGChatBot:
             self.rag_loader.create_index()
             
         # Obtention du retriever
-        self.retriever = self.rag_loader.get_retriever(k=15)
+        self.retriever = self.rag_loader.get_retriever(k=10)
         
         # Template du prompt en arabe
         self.prompt_template = ChatPromptTemplate.from_messages([
-            ("system", """أنت مساعد مفيد يجيب على الأسئلة باللغة العربية باستخدام المعلومات المقدمة.
+            ("system", """أنت مساعد مفيد يجيب على الأسئلة باللغة العربية باستخدام السياق المقدم.
             استخدم المعلومات التالية للإجابة على السؤال:
             
             {context}
             
-            إذا لم تكن المعلومات كافية للإجابة على السؤال بشكل كامل، قم بتوضيح ذلك.
-            أجب بشكل دقيق دقيق."""),
+            إذا لم تكن المعلومات كافية للإجابة على السؤال بشكل كامل، قل لا أعرف، لا تحاول اختلاق اجابة.
+            أجب بشكل دقيق ."""),
             ("human", "{question}")
         ])
 
@@ -387,6 +416,8 @@ class RAGChatBot:
             
             # Préparation du contexte
             context = "\n".join([doc.page_content for doc in relevant_docs])
+
+            print("context===========================",context)
             
             # Création du prompt
             prompt = self.prompt_template.format_messages(
