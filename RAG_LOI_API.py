@@ -187,7 +187,7 @@ class RAGLoader:
         
             bool: True si l'index a été chargé, False sinon
         """
-        self.merge_files(10)
+        # self.merge_files(10)
         if not self._index_exists():
             print("Aucun index trouvé.")
             return False
