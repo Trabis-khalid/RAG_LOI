@@ -365,7 +365,7 @@ class RAGChatBot:
         self.llm = ChatMistralAI(model="mistral-large-latest", mistral_api_key="QK0ZZpSxQbCEVgOLtI6FARQVmBYc6WGP")
         self.rag_loader = RAGLoader()
         
-        # Ajout de vérifications supplémentaires lors de l'initialisation
+        # Vérification et création de l'index si nécessaire
         try:
             if not self.rag_loader.load_index():
                 print("Création d'un nouvel index...")
@@ -394,7 +394,7 @@ class RAGChatBot:
             if not question or not isinstance(question, str):
                 return "عذراً، السؤال غير صالح"
 
-            # Récupération des documents pertinents avec vérification
+            # Récupération des documents pertinents
             try:
                 relevant_docs = self.retriever(question)
             except Exception as e:
@@ -405,11 +405,17 @@ class RAGChatBot:
             if not relevant_docs:
                 return "عذراً، لم أجد معلومات كافية للإجابة على سؤالك"
 
-            # Préparation du contexte avec vérification
+            # Préparation du contexte
             try:
                 context = "\n".join([doc.page_content for doc in relevant_docs if hasattr(doc, 'page_content')])
                 if not context.strip():
                     return "عذراً، لم أتمكن من استخراج السياق المناسب"
+                
+                # Afficher la question et le contexte sur la page Streamlit
+                st.markdown(f"**Question posée :** {question}")
+                st.markdown("**Contexte récupéré :**")
+                st.markdown(context)
+                
             except Exception as e:
                 print(f"Erreur lors de la préparation du contexte: {str(e)}")
                 return "عذراً، حدث خطأ في معالجة المعلومات"
