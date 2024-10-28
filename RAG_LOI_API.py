@@ -289,6 +289,7 @@ class RAGLoader:
         def retriever_function(query: str) -> List[Document]:
             # Créer l'embedding de la requête
             query_embedding = self.encode([query])
+            print("query_embedding=========================", query_embedding.shape)
             
             if query_embedding is None or len(query_embedding) == 0:
                 print("Erreur : impossible de créer l'embedding pour la requête.")
@@ -307,6 +308,7 @@ class RAGLoader:
             for idx in indices[0]:
                 if idx != -1:  # FAISS retourne -1 pour les résultats invalides
                     results.append(self.indexed_documents[idx])
+
                     
             return results
             
@@ -395,6 +397,7 @@ class RAGChatBot:
             
         # Obtention du retriever
         self.retriever = self.rag_loader.get_retriever(k=5)
+        print("retriever===========================", self.retriever)
         
         # Template du prompt en arabe
         self.prompt_template = ChatPromptTemplate.from_messages([
@@ -416,8 +419,6 @@ class RAGChatBot:
             
             # Préparation du contexte
             context = "\n".join([doc.page_content for doc in relevant_docs])
-
-            print("context===========================",context)
             
             # Création du prompt
             prompt = self.prompt_template.format_messages(
@@ -452,6 +453,7 @@ def handle_question():
     if question:
         # Obtention de la réponse
         response = st.session_state.chatbot.get_response(question)
+        print("response=======================+++++++", response)
         
         # Ajout à l'historique
         st.session_state.chat_history.append({
