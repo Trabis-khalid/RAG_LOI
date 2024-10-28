@@ -110,8 +110,6 @@ class RAGLoader:
         Returns:
             Liste de Documents contenant les morceaux de texte et leurs métadonnées
         """
-        self.merge_files(10)
-
         documents = []
         
         # Vérifier d'abord si les splits existent déjà
@@ -237,12 +235,12 @@ class RAGLoader:
             embeddings_array = np.array(embeddings).astype('float32')
            
             # Vérifier la forme des embeddings
-            if len(embeddings.shape) != 2:
-                print(f"Shape des embeddings: {embeddings.shape}")
-                if len(embeddings.shape) == 3:
-                    embeddings = embeddings.squeeze(0)
+            if len(embeddings_array.shape) != 2:
+                print(f"Shape des embeddings: {embeddings_array.shape}")
+                if len(embeddings_array.shape) == 3:
+                    embeddings_array = embeddings_array.squeeze(0)
                 else:
-                    raise ValueError(f"Format d'embeddings inattendu: {embeddings.shape}")
+                    raise ValueError(f"Format d'embeddings inattendu: {embeddings_array.shape}")
             
             # Initialiser l'index FAISS
             dimension = embeddings_array.shape[1]  # Get the embedding dimension
@@ -313,6 +311,7 @@ class RAGLoader:
             return results
             
         return retriever_function
+
 
 # Configuration de la page Streamlit
 st.set_page_config(
