@@ -111,6 +111,7 @@ class RAGLoader:
             Liste de Documents contenant les morceaux de texte et leurs métadonnées
         """
         self.merge_files(10)
+
         documents = []
         
         # Vérifier d'abord si les splits existent déjà
@@ -188,6 +189,7 @@ class RAGLoader:
         
             bool: True si l'index a été chargé, False sinon
         """
+        self.merge_files(10)
         if not self._index_exists():
             print("Aucun index trouvé.")
             return False
@@ -270,7 +272,7 @@ class RAGLoader:
         """Vérifie si l'index et les documents associés existent"""
         return self.index_path.exists() and self.documents_path.exists()
 
-    def get_retriever(self, k: int = 5):
+    def get_retriever(self, k: int = 10):
         """
         Crée un retriever pour l'utilisation avec LangChain
         
@@ -305,8 +307,8 @@ class RAGLoader:
             # Retourner les documents trouvés
             results = []
             for idx in indices[0]:
-                # if idx != -1:  # FAISS retourne -1 pour les résultats invalides
-                results.append(self.indexed_documents[idx])
+                if idx != -1:  # FAISS retourne -1 pour les résultats invalides
+                    results.append(self.indexed_documents[idx])
                     
             return results
             
