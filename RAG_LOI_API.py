@@ -304,7 +304,7 @@ class RAGLoader:
             
             # Retourner les documents trouvés
             results = []
-            for idx in indices:
+            for idx in indices[0]:
                 if idx != -1:  # FAISS retourne -1 pour les résultats invalides
                     results.append(self.indexed_documents[idx])
                     
