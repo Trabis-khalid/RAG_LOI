@@ -385,21 +385,20 @@ st.markdown("""
 
 class RAGChatBot:
     def __init__(self):
-        # Initialisation du modèle LLM
         self.llm = ChatMistralAI(model="mistral-large-latest", mistral_api_key="QK0ZZpSxQbCEVgOLtI6FARQVmBYc6WGP")
-        
-        # Initialisation du RAG
         self.rag_loader = RAGLoader()
         
-        # Chargement ou création de l'index si nécessaire
-        if not self.rag_loader.load_index():
-            self.rag_loader.create_index()
+        # Ajout de vérifications supplémentaires lors de l'initialisation
+        try:
+            if not self.rag_loader.load_index():
+                print("Création d'un nouvel index...")
+                if not self.rag_loader.create_index():
+                    raise Exception("Échec de la création de l'index")
+        except Exception as e:
+            print(f"Erreur d'initialisation: {str(e)}")
             
-        # Obtention du retriever
         self.retriever = self.rag_loader.get_retriever(k=5)
-        print("retriever===========================", self.retriever)
         
-        # Template du prompt en arabe
         self.prompt_template = ChatPromptTemplate.from_messages([
             ("system", """أنت مساعد مفيد يجيب على الأسئلة باللغة العربية باستخدام السياق المقدم.
             استخدم المعلومات التالية للإجابة على السؤال:
@@ -412,98 +411,115 @@ class RAGChatBot:
         ])
 
     def get_response(self, question: str) -> str:
-        """Obtient une réponse à partir d'une question"""
+        """Obtient une réponse à partir d'une question avec gestion d'erreurs améliorée"""
         try:
-            # Récupération des documents pertinents
-            relevant_docs = self.retriever(question)
-            
-            # Préparation du contexte
-            context = "\n".join([doc.page_content for doc in relevant_docs])
-            
-            # Création du prompt
-            prompt = self.prompt_template.format_messages(
-                context=context,
-                question=question
-            )
-            
-            # Obtention de la réponse
-            response = self.llm(prompt)
-            
-            return response.content
+            # Vérification de la question
+            if not question or not isinstance(question, str):
+                return "عذراً، السؤال غير صالح"
+
+            # Récupération des documents pertinents avec vérification
+            try:
+                relevant_docs = self.retriever(question)
+            except Exception as e:
+                print(f"Erreur lors de la récupération des documents: {str(e)}")
+                return "عذراً، حدث خطأ في البحث عن المعلومات المناسبة"
+
+            # Vérification des documents récupérés
+            if not relevant_docs:
+                return "عذراً، لم أجد معلومات كافية للإجابة على سؤالك"
+
+            # Préparation du contexte avec vérification
+            try:
+                context = "\n".join([doc.page_content for doc in relevant_docs if hasattr(doc, 'page_content')])
+                if not context.strip():
+                    return "عذراً، لم أتمكن من استخراج السياق المناسب"
+            except Exception as e:
+                print(f"Erreur lors de la préparation du contexte: {str(e)}")
+                return "عذراً، حدث خطأ في معالجة المعلومات"
+
+            # Création du prompt et obtention de la réponse
+            try:
+                prompt = self.prompt_template.format_messages(
+                    context=context,
+                    question=question
+                )
+                response = self.llm(prompt)
+                return response.content if hasattr(response, 'content') else "عذراً، لم أتمكن من صياغة إجابة مناسبة"
+            except Exception as e:
+                print(f"Erreur lors de la génération de la réponse: {str(e)}")
+                return "عذراً، حدث خطأ في إنشاء الإجابة"
+
         except Exception as e:
-            return f"عذراً، حدث خطأ: {str(e)}"
+            print(f"Erreur générale dans get_response: {str(e)}")
+            return f"عذراً، حدث خطأ غير متوقع: {str(e)}"
 
 
 def initialize_session_state():
-    """Initialise les variables de session"""
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
-    
-    if 'chatbot' not in st.session_state:
-        st.session_state.chatbot = RAGChatBot()
+    """Initialise les variables de session avec gestion d'erreurs"""
+    try:
+        if 'chat_history' not in st.session_state:
+            st.session_state.chat_history = []
         
-    if 'current_question' not in st.session_state:
-        st.session_state.current_question = ""
+        if 'chatbot' not in st.session_state:
+            st.session_state.chatbot = RAGChatBot()
+            
+        if 'current_question' not in st.session_state:
+            st.session_state.current_question = ""
+    except Exception as e:
+        st.error(f"Error initializing session state: {str(e)}")
 
 def handle_question():
-    """Gère le traitement d'une nouvelle question"""
-    # Récupère la question depuis session_state
-    question = st.session_state.question_input
-    
-    if question:
-        # Obtention de la réponse
-        response = st.session_state.chatbot.get_response(question)
-        print("response=======================+++++++", response)
+    """Gère le traitement d'une nouvelle question avec gestion d'erreurs"""
+    try:
+        question = st.session_state.question_input
         
-        # Ajout à l'historique
-        st.session_state.chat_history.append({
-            'time': datetime.datetime.now().strftime("%H:%M:%S"),
-            'question': question,
-            'answer': response
-        })
-        
-        # Réinitialisation du champ de question
-        st.session_state.question_input = ""
+        if question and question.strip():
+            response = st.session_state.chatbot.get_response(question)
+            
+            st.session_state.chat_history.append({
+                'time': datetime.datetime.now().strftime("%H:%M:%S"),
+                'question': question,
+                'answer': response
+            })
+            
+            st.session_state.question_input = ""
+    except Exception as e:
+        st.error(f"Error handling question: {str(e)}")
 
 def main():
-    # Initialisation des variables de session
-    initialize_session_state()
-    
-    # Titre de l'application
-    st.markdown('<h1 class="title">هذا برنامج الاجابة عن الأسئلة المتعلقة بالقانون المغربي</h1>', unsafe_allow_html=True)
- 
-    # Formulaire pour la question
-    with st.form(key='question_form'):
-        # Zone de saisie de la question
-        st.text_input(
-            label='',
-            placeholder='اكتب سؤالك هنا...',
-            key='question_input'
-        )
+    try:
+        initialize_session_state()
         
-        # Bouton d'envoi
-        submit_button = st.form_submit_button("إرسال", on_click=handle_question)
-    
-    # Affichage de l'historique
-    st.markdown('<div class="history">', unsafe_allow_html=True)
-    for chat in reversed(st.session_state.chat_history):
-        # Affichage de la question
-        st.markdown(f"""
-        <div class="question">
-            <strong>السؤال ({chat['time']}):</strong><br>
-            {chat['question']}
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<h1 class="title">هذا برنامج الاجابة عن الأسئلة المتعلقة بالقانون المغربي</h1>', unsafe_allow_html=True)
+     
+        with st.form(key='question_form'):
+            st.text_input(
+                label='',
+                placeholder='اكتب سؤالك هنا...',
+                key='question_input'
+            )
+            
+            submit_button = st.form_submit_button("إرسال", on_click=handle_question)
         
-        # Affichage de la réponse
-        st.markdown(f"""
-        <div class="answer">
-            <strong>الجواب:</strong><br>
-            {chat['answer']}
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="history">', unsafe_allow_html=True)
+        for chat in reversed(st.session_state.chat_history):
+            st.markdown(f"""
+            <div class="question">
+                <strong>السؤال ({chat['time']}):</strong><br>
+                {chat['question']}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div class="answer">
+                <strong>الجواب:</strong><br>
+                {chat['answer']}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Error in main function: {str(e)}")
 
 if __name__ == "__main__":
     main()
