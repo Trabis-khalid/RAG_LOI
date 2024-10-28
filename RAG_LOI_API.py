@@ -184,6 +184,7 @@ class RAGLoader:
         Charge l'index FAISS et les documents associés s'ils existent
         
         Returns:
+        
             bool: True si l'index a été chargé, False sinon
         """
         self.merge_files(10)
@@ -269,7 +270,7 @@ class RAGLoader:
         """Vérifie si l'index et les documents associés existent"""
         return self.index_path.exists() and self.documents_path.exists()
 
-    def get_retriever(self, k: int = 5):
+    def get_retriever(self, k: int = 10):
         """
         Crée un retriever pour l'utilisation avec LangChain
         
