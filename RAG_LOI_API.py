@@ -289,11 +289,10 @@ class RAGLoader:
         def retriever_function(query: str) -> List[Document]:
             # Créer l'embedding de la requête
             query_embedding = self.encode([query])
-            print("query_embedding=========================", query_embedding.shape)
             
             if query_embedding is None or len(query_embedding) == 0:
                 print("Erreur : impossible de créer l'embedding pour la requête.")
-                return []  # ou lever une exception
+                return ["Erreur : impossible de créer l'embedding pour la requête."]  # ou lever une exception
             
             query_embedding = query_embedding[0]
             
@@ -306,8 +305,8 @@ class RAGLoader:
             # Retourner les documents trouvés
             results = []
             for idx in indices[0]:
-                if idx != -1:  # FAISS retourne -1 pour les résultats invalides
-                    results.append(self.indexed_documents[idx])
+                # if idx != -1:  # FAISS retourne -1 pour les résultats invalides
+                results.append(self.indexed_documents[idx])
 
                     
             return results
