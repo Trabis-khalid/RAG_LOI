@@ -184,10 +184,9 @@ class RAGLoader:
         Charge l'index FAISS et les documents associés s'ils existent
         
         Returns:
-        self.merge_files(10)
             bool: True si l'index a été chargé, False sinon
         """
-        
+        self.merge_files(10)
         if not self._index_exists():
             print("Aucun index trouvé.")
             return False
