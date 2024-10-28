@@ -110,6 +110,7 @@ class RAGLoader:
         Returns:
             Liste de Documents contenant les morceaux de texte et leurs métadonnées
         """
+        self.merge_files(10)
         documents = []
         
         # Vérifier d'abord si les splits existent déjà
